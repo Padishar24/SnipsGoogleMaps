@@ -1,5 +1,7 @@
 [global]
 
 [secret]
-station_from=
-station_via=
+key=
+home=
+work=
+proxy=
