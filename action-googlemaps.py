@@ -95,27 +95,89 @@ def read_configuration_file(configuration_file):
     except (IOError, configparser.Error):
         return dict()
 
+        # if this skill is supposed to run on the satellite,
+# please get this mqtt connection info from <config.ini>
+#
+# hint: MQTT server is always running on the master device
+MQTT_IP_ADDR: str = "localhost"
+MQTT_PORT: int = 1883
+MQTT_ADDR: str = "{}:{}".format(MQTT_IP_ADDR, str(MQTT_PORT))
 
-def timetowork_callback(hermes, intent_message):
-    text_to_speech = googleMapsAccess.getTimeToWork()
-    hermes.publish_end_session(intent_message.session_id, text_to_speech)
 
-def distance_callback(hermes, intent_message):
-    #get the slots from intent
-    for (slot_value, slot) in intent_message.slots.items():
-        if slot_value == "from":
-            tmp_origin = slot.first().value.encode("utf8")
-        elif slot_value == "to":
-            tmp_destination = slot.first().value.encode("utf8")
+class GoogleMapsAction:
+    """class used to wrap action code with mqtt connection
+       please change the name referring to your application
+    """
 
-    text_to_speech = googleMapsAccess.getDistance(tmp_origin, tmp_destination)
-    hermes.publish_end_session(intent_message.session_id, text_to_speech)
+    def __init__(self):
+        _LOGGER.debug(u"[GoogleMapsAction] - init")
+        # get the configuration if needed
+        try:
+            self.config = read_configuration_file(CONFIG_INI)
+        except Exception:
+            self.config = None
+
+        # start listening to MQTT
+        self.start_blocking()
+
+    @staticmethod
+    def distance_callback(hermes: Hermes,
+                          intent_message: IntentMessage):
+        _LOGGER.debug(u"[GoogleMapsAction] - distance_callback")
+        #get the slots from intent
+        for (slot_value, slot) in intent_message.slots.items():
+            if slot_value == "from":
+                tmp_origin = slot.first().value.encode("utf8")
+            elif slot_value == "to":
+                tmp_destination = slot.first().value.encode("utf8")
+        text_to_speech = self.googleMapsAccess.getDistance(tmp_origin, tmp_destination)
+        hermes.publish_end_session(intent_message.session_id, text_to_speech)
+       
+
+    @staticmethod
+    def timetowork_callback(hermes: Hermes,
+                          intent_message: IntentMessage):
+        _LOGGER.debug(u"[GoogleMapsAction] - timetowork_callback")
+        text_to_speech = self.googleMapsAccess.getTimeToWork()
+        hermes.publish_end_session(intent_message.session_id, text_to_speech)
+        
+
+    # register callback function to its intent and start listen to MQTT bus
+    def start_blocking(self):
+        _LOGGER.debug(u"[GoogleMapsAction] - start blocking")
+        self.googleMapsAccess = GoogleMapsAPI(self.config['secret']['key'], self.config['secret']['home'], self.config['secret']['work'], self.config['secret']['proxy'])
+        with Hermes(MQTT_ADDR) as h:
+            h.subscribe_intent("burkhardzeiner:checkToWorkTraffic", timetowork_callback)\
+            .subscribe_intent("burkhardzeiner:checkDistance", distance_callback)\
+            .loop_forever()
+
 
 if __name__ == "__main__":
-    conf = read_configuration_file(CONFIG_INI)
-    googleMapsAccess = GoogleMapsAPI(conf['secret']['key'], conf['secret']['home'], conf['secret']['work'], conf['secret']['proxy'])
-    mqtt_opts = MqttOptions()
-    with Hermes(mqtt_options=mqtt_opts) as h:
-        h.subscribe_intent("burkhardzeiner:checkToWorkTraffic", timetowork_callback)
-        h.subscribe_intent("burkhardzeiner:checkDistance", distance_callback)
-        h.start()
+    GoogleMapsAction()
+
+
+# def timetowork_callback(hermes, intent_message):
+#     text_to_speech = googleMapsAccess.getTimeToWork()
+#     hermes.publish_end_session(intent_message.session_id, text_to_speech)
+
+# def distance_callback(hermes, intent_message):
+#     #get the slots from intent
+#     for (slot_value, slot) in intent_message.slots.items():
+#         if slot_value == "from":
+#             tmp_origin = slot.first().value.encode("utf8")
+#         elif slot_value == "to":
+#             tmp_destination = slot.first().value.encode("utf8")
+
+#     text_to_speech = googleMapsAccess.getDistance(tmp_origin, tmp_destination)
+#     hermes.publish_end_session(intent_message.session_id, text_to_speech)
+
+# if __name__ == "__main__":
+#     coming_intent = intent_message.intent.intent_name
+
+#     conf = read_configuration_file(CONFIG_INI)
+#     googleMapsAccess = GoogleMapsAPI(conf['secret']['key'], conf['secret']['home'], conf['secret']['work'], conf['secret']['proxy'])
+#     mqtt_opts = MqttOptions()
+#     with Hermes(mqtt_options=mqtt_opts) as h:
+#         h.subscribe_intent("burkhardzeiner:checkToWorkTraffic", timetowork_callback)
+#         h.subscribe_intent("burkhardzeiner:checkDistance", distance_callback)
+#         h.start()
