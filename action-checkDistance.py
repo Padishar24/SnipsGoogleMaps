@@ -6,6 +6,8 @@ from hermes_python.hermes import Hermes
 from hermes_python.ffi.utils import MqttOptions
 from hermes_python.ontology import *
 import io
+import googlemaps
+from datetime import datetime
 
 CONFIGURATION_ENCODING_FORMAT = "utf-8"
 CONFIG_INI = "config.ini"
@@ -39,10 +41,7 @@ def action_wrapper(hermes, intentMessage, conf):
      
     Refer to the documentation for further details. 
     """ 
-    
-    import googlemaps
-    from datetime import datetime
-    
+
     apiKey = conf['secret']['key']
     proxy = conf['secret']['proxy']
     
@@ -56,6 +55,7 @@ def action_wrapper(hermes, intentMessage, conf):
     tmp_origin = ""
     tmp_destination = ""
     for (slot_value, slot) in intentMessage.slots.items():
+        print (slot_value + " " + slot.first().value.encode("utf8"))
         if slot_value == "from":
             tmp_origin = slot.first().value.encode("utf8")
         elif slot_value == "to":
