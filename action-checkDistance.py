@@ -57,9 +57,9 @@ def action_wrapper(hermes, intentMessage, conf):
     for (slot_value, slot) in intentMessage.slots.items():
         print (slot_value + " " + slot.first().value)
         if slot_value == "from":
-            tmp_origin = slot.first().value.encode("utf8")
+            tmp_origin = slot.first().value
         elif slot_value == "to":
-            tmp_destination = slot.first().value.encode("utf8")
+            tmp_destination = slot.first().value
     print (tmp_origin)
     print (tmp_destination)
 
@@ -82,6 +82,8 @@ def action_wrapper(hermes, intentMessage, conf):
                 directions_result[0]["summary"])
             str = str + "Die Fahrt dauert %s." % directions_result[0]["legs"][0]["duration_in_traffic"]["text"]
             hermes.publish_end_session(intentMessage.session_id, str)
+        else:
+            hermes.publish_end_session(intentMessage.session_id, "Keine Ergebnisse")
     except:
         hermes.publish_end_session(intentMessage.session_id, "Keine Ergebnisse")
     
