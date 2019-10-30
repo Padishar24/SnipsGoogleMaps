@@ -55,12 +55,14 @@ def action_wrapper(hermes, intentMessage, conf):
     tmp_origin = ""
     tmp_destination = ""
     for (slot_value, slot) in intentMessage.slots.items():
-        print (slot_value + " " + slot.first().value.encode("utf8"))
+        print (slot_value + " " + slot.first().value)
         if slot_value == "from":
             tmp_origin = slot.first().value.encode("utf8")
         elif slot_value == "to":
             tmp_destination = slot.first().value.encode("utf8")
-    
+    print (tmp_origin)
+    print (tmp_destination)
+
     starttime = datetime.now()
     origin = tmp_origin
     destination = tmp_destination
